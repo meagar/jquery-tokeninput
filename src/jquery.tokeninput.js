@@ -28,6 +28,8 @@ var DEFAULT_SETTINGS = {
     processPrePopulate: false,
     animateDropdown: true,
     allowNew : true,
+    newRecordId : null,
+    transform : null,
     onResult: null,
     onAdd: null,
     onDelete: null,
@@ -78,7 +80,6 @@ var KEY = {
 var methods = {
     init: function(url_or_data_or_function, options) {
         var settings = $.extend({}, DEFAULT_SETTINGS, options || {});
-
         return this.each(function () {
             $(this).data("tokenInputObject", new $.TokenList(this, url_or_data_or_function, settings));
         });
@@ -244,7 +245,10 @@ $.TokenList = function (input, url_or_data, settings) {
                   if(selected_dropdown_item) {
                     add_token($(selected_dropdown_item).data("tokeninput"));
                     return false;
+                  } else if (input_box.val()) {
+                    return false;
                   }
+
                   break;
 
                 case KEY.ESCAPE:
@@ -680,9 +684,18 @@ $.TokenList = function (input, url_or_data, settings) {
     // Do a search and show the "searching" dropdown if the input is longer
     // than settings.minChars
     function do_search() {
-        var query = input_box.val().toLowerCase();
+        var query = input_box.val();
 
         if(query && query.length) {
+
+            if (settings.transform) {
+                if ($.isFunction(settings.transform)) {
+                    query = settings.transform(query);
+                } else {
+                    alert("tokeninput: Transform is not a regular expression or function, I don't know how to use it");
+                }
+            }
+
             if(selected_token) {
                 deselect_token($(selected_token), POSITION.AFTER);
             }
@@ -751,18 +764,20 @@ $.TokenList = function (input, url_or_data, settings) {
                 // Do the search through local data
                 var exists = false;
                 var results = $.grep(settings.local_data, function (row) {
-                  var name = row.name.toLowerCase();
-                  if (name.indexOf(query.toLowerCase()) > -1) {
-                    if (name == query)
-                      exists = true;
-                    return true;
-                  }
+                    var name = row.name.toLowerCase();
+                    if (name.indexOf(query.toLowerCase()) > -1) {
+                        if (name == query)
+                            exists = true;
+                        return true;
+                    }
 
-                  return false;
+                    return false;
                 });
 
-                if (settings.allowNew && !exists)
-                  results.push({ id : query.toLowerCase(), name : query.toLowerCase() })
+                if (settings.allowNew && !exists) {
+                    var id = $.isFunction(settings.newRecordId) ? settings.newRecordId(query) : query;
+                    results.push({ id : id , name : query });
+                }
 
                 if($.isFunction(settings.onResult)) {
                     results = settings.onResult.call(hidden_input, results);
