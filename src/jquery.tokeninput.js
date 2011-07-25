@@ -27,6 +27,7 @@ var DEFAULT_SETTINGS = {
     prePopulate: null,
     processPrePopulate: false,
     animateDropdown: true,
+    allowNew : true,
     onResult: null,
     onAdd: null,
     onDelete: null,
@@ -748,13 +749,25 @@ $.TokenList = function (input, url_or_data, settings) {
                 $.ajax(ajax_params);
             } else if(settings.local_data) {
                 // Do the search through local data
+                var exists = false;
                 var results = $.grep(settings.local_data, function (row) {
-                    return row.name.toLowerCase().indexOf(query.toLowerCase()) > -1;
+                  var name = row.name.toLowerCase();
+                  if (name.indexOf(query.toLowerCase()) > -1) {
+                    if (name == query)
+                      exists = true;
+                    return true;
+                  }
+
+                  return false;
                 });
+
+                if (settings.allowNew && !exists)
+                  results.push({ id : query.toLowerCase(), name : query.toLowerCase() })
 
                 if($.isFunction(settings.onResult)) {
                     results = settings.onResult.call(hidden_input, results);
                 }
+
                 cache.add(query, results);
                 populate_dropdown(query, results);
             }
