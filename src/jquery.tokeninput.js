@@ -33,7 +33,8 @@ var DEFAULT_SETTINGS = {
     onResult: null,
     onAdd: null,
     onDelete: null,
-    idPrefix: "token-input-"
+    idPrefix: "token-input-",
+    dropdownPosition: "absolute"
 };
 
 // Default classes to use when theming
@@ -587,11 +588,19 @@ $.TokenList = function (input, url_or_data, settings) {
     }
 
     function show_dropdown() {
+        var top = $(token_list).offset().top + $(token_list).outerHeight();
+        var left = $(token_list).offset().left;
+
+        if (settings.dropdownPosition == 'fixed') {
+          top -= $(document).scrollTop();
+          left -= $(document).scrollLeft();
+        }
+
         dropdown
             .css({
-                position: "absolute",
-                top: $(token_list).offset().top + $(token_list).outerHeight(),
-                left: $(token_list).offset().left,
+                position: settings.dropdownPosition,
+                top: top,
+                left: left,
                 zindex: 999
             })
             .show();
